@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>دُغري | لوحة الإدارة</title>
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --surface:rgba(255,255,255,.82);
+      --surface-solid:#fff;
+      --surface-2:#eef2f7;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e2e8f0;
+      --primary:#1d4ed8;
+      --primary-2:#2563eb;
+      --success:#15803d;
+      --success-bg:#dcfce7;
+      --warning:#b45309;
+      --warning-bg:#fef3c7;
+      --danger:#b91c1c;
+      --danger-bg:#fee2e2;
+      --gold:#c28b1e;
+      --shadow:0 18px 55px rgba(15,23,42,.08);
+      --radius:22px;
+    }
+    :root[data-theme="dark"]{
+      --bg:#08111f;
+      --surface:rgba(15,23,42,.84);
+      --surface-solid:#0f172a;
+      --surface-2:#172236;
+      --text:#f8fafc;
+      --muted:#94a3b8;
+      --line:#263247;
+      --primary:#60a5fa;
+      --primary-2:#3b82f6;
+      --success:#4ade80;
+      --success-bg:rgba(34,197,94,.14);
+      --warning:#fbbf24;
+      --warning-bg:rgba(245,158,11,.14);
+      --danger:#f87171;
+      --danger-bg:rgba(239,68,68,.14);
+      --gold:#f2c05c;
+      --shadow:0 22px 65px rgba(0,0,0,.28);
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;min-height:100vh;font-family:"Cairo",sans-serif;background:
+      radial-gradient(circle at 10% 0%,rgba(37,99,235,.10),transparent 27%),
+      radial-gradient(circle at 90% 10%,rgba(194,139,30,.08),transparent 24%),var(--bg);color:var(--text);transition:background .4s ease,color .4s ease}
+    button,input,select,textarea{font:inherit}
+    button{border:0;cursor:pointer}
+    .app-shell{width:min(1240px,100%);margin:auto;padding:14px 12px 30px}
+    .topbar{position:sticky;top:10px;z-index:30;display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface);backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+    .brand{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+    .brand-mark{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,#1e3a8a,#0f172a);color:#fff;font-weight:800;box-shadow:0 10px 24px rgba(29,78,216,.22)}
+    .brand-copy{min-width:0}
+    .brand-copy strong{display:block;font-size:14px}
+    .brand-copy span{display:block;color:var(--muted);font-size:10px}
+    .top-actions{display:flex;align-items:center;gap:8px}
+    .icon-btn,.logout-btn{width:42px;height:42px;border-radius:13px;background:var(--surface-2);color:var(--text);display:grid;place-items:center;border:1px solid var(--line);transition:transform .24s ease,background .24s ease,border-color .24s ease}
+    .icon-btn:hover,.logout-btn:hover{transform:translateY(-2px);border-color:rgba(37,99,235,.35)}
+    .logout-btn{width:auto;padding:0 13px;display:flex;gap:6px;color:var(--danger)}
+    .content{padding-top:16px}
+    .hero{display:grid;gap:14px;margin-bottom:14px}
+    .hero-card{padding:20px;border-radius:26px;background:linear-gradient(145deg,var(--surface-solid),var(--surface));border:1px solid var(--line);box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .hero-card::after{content:"";position:absolute;inset:auto -50px -80px auto;width:180px;height:180px;border-radius:50%;background:rgba(37,99,235,.09);filter:blur(2px)}
+    .eyebrow{font-size:11px;color:var(--muted);margin-bottom:4px}
+    h1{margin:0;font-size:28px;line-height:1.15}
+    .hero-card p{margin:9px 0 0;color:var(--muted);font-size:12px;line-height:1.9;max-width:560px}
+    .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .stat{padding:16px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);min-height:106px;position:relative;overflow:hidden}
+    .stat .label{color:var(--muted);font-size:10px}
+    .stat strong{display:block;font-size:28px;line-height:1.15;margin-top:9px}
+    .stat .dot{position:absolute;left:13px;top:13px;width:8px;height:8px;border-radius:50%;background:var(--primary-2);box-shadow:0 0 0 5px rgba(37,99,235,.09)}
+    .stat.pending .dot{background:#f59e0b;box-shadow:0 0 0 5px rgba(245,158,11,.10)}
+    .stat.approved .dot{background:#22c55e;box-shadow:0 0 0 5px rgba(34,197,94,.10)}
+    .stat.rejected .dot{background:#ef4444;box-shadow:0 0 0 5px rgba(239,68,68,.10)}
+    .panel{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:24px;padding:14px}
+    .panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .panel-head h2{margin:0;font-size:17px}
+    .panel-head p{margin:3px 0 0;color:var(--muted);font-size:10px}
+    .toolbar{display:grid;grid-template-columns:1fr;gap:9px;margin-bottom:12px}
+    .input-wrap{position:relative}
+    .input-wrap input,.input-wrap select{width:100%;height:48px;border-radius:15px;border:1px solid var(--line);background:var(--surface-solid);color:var(--text);padding:0 14px;outline:none;transition:border-color .22s ease,box-shadow .22s ease,transform .22s ease}
+    .input-wrap input:focus,.input-wrap select:focus{border-color:rgba(37,99,235,.5);box-shadow:0 0 0 4px rgba(37,99,235,.09)}
+    .list{display:grid;gap:10px}
+    .card{border:1px solid var(--line);background:var(--surface-solid);border-radius:20px;padding:14px;transition:transform .24s ease,box-shadow .24s ease,border-color .24s ease}
+    .card:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(15,23,42,.08);border-color:rgba(37,99,235,.25)}
+    :root[data-theme="dark"] .card:hover{box-shadow:0 18px 36px rgba(0,0,0,.18)}
+    .card-top{display:flex;align-items:flex-start;gap:10px}
+    .avatar{flex:0 0 42px;width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#1d4ed8,#1e3a8a);color:#fff;font-weight:800}
+    .card-main{min-width:0;flex:1}
+    .card-main strong{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .card-main small{display:block;color:var(--muted);font-size:9px;margin-top:2px}
+    .status{font-size:9px;padding:5px 8px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+    .status.pending{color:var(--warning);background:var(--warning-bg)}
+    .status.approved{color:var(--success);background:var(--success-bg)}
+    .status.rejected{color:var(--danger);background:var(--danger-bg)}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+    .info-box{padding:10px 11px;border-radius:13px;background:var(--surface-2);border:1px solid var(--line);min-width:0}
+    .info-box span{display:block;color:var(--muted);font-size:8px;margin-bottom:2px}
+    .info-box strong{display:block;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .detail-preview{margin-top:10px;padding:11px;border-radius:14px;border:1px dashed var(--line);color:var(--muted);font-size:10px;line-height:1.8;background:linear-gradient(180deg,transparent,rgba(148,163,184,.03))}
+    .card-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:12px}
+    .action{height:43px;border-radius:13px;transition:transform .22s ease,filter .22s ease,box-shadow .22s ease}
+    .action:hover{transform:translateY(-1px);filter:brightness(1.02)}
+    .action:active{transform:translateY(1px) scale(.99)}
+    .action-primary{background:var(--primary-2);color:#fff;box-shadow:0 10px 20px rgba(37,99,235,.16)}
+    .action-ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line)}
+    .action-danger{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(185,28,28,.12)}
+    .empty{padding:36px 16px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:18px}
+    .empty strong{display:block;color:var(--text);font-size:14px;margin-bottom:5px}
+    .loader{padding:30px;text-align:center;color:var(--muted);font-size:11px}
+    .spinner{width:27px;height:27px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--primary-2);margin:0 auto 10px;animation:spin .9s linear infinite}
+    .login-screen{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:16px;background:radial-gradient(circle at 15% 20%,rgba(37,99,235,.15),transparent 28%),radial-gradient(circle at 85% 80%,rgba(194,139,30,.11),transparent 26%),var(--bg);transition:opacity .45s ease,visibility .45s ease}
+    .login-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+    .login-card{width:min(430px,100%);background:var(--surface);backdrop-filter:blur(18px);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:28px;padding:22px}
+    .login-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+    .login-mark{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(145deg,#1d4ed8,#0f172a);color:#fff;font-weight:900}
+    .login-head strong{display:block;font-size:17px}.login-head span{display:block;color:var(--muted);font-size:10px}
+    .field{margin-bottom:10px}.field label{display:block;font-size:10px;color:var(--muted);margin-bottom:5px}.field input{width:100%;height:50px;border-radius:15px;border:1px solid var(--line);background:var(--surface-solid);color:var(--text);padding:0 14px;outline:none}.field input:focus{border-color:rgba(37,99,235,.5);box-shadow:0 0 0 4px rgba(37,99,235,.09)}
+    .login-btn{width:100%;height:50px;border-radius:15px;background:var(--primary-2);color:#fff;font-weight:800;box-shadow:0 12px 26px rgba(37,99,235,.2);transition:transform .22s ease,box-shadow .22s ease}.login-btn:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(37,99,235,.25)}.login-btn:disabled{opacity:.6;cursor:wait;transform:none}
+    .login-note{margin-top:9px;color:var(--muted);font-size:9px;line-height:1.7;text-align:center}
+    .modal-backdrop{position:fixed;inset:0;z-index:70;display:grid;place-items:end center;padding:10px;background:rgba(2,6,23,.42);backdrop-filter:blur(5px);opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s ease}
+    .modal-backdrop.open{opacity:1;visibility:visible}
+    .modal{width:min(720px,100%);max-height:92vh;overflow:auto;background:var(--surface-solid);color:var(--text);border:1px solid var(--line);border-radius:26px 26px 14px 14px;padding:16px;box-shadow:0 30px 100px rgba(0,0,0,.25);transform:translateY(25px);transition:transform .4s cubic-bezier(.2,.8,.2,1)}
+    .modal-backdrop.open .modal{transform:translateY(0)}
+    .modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}.modal-head h3{margin:0;font-size:17px}.modal-close{width:38px;height:38px;border-radius:12px;background:var(--surface-2);color:var(--text)}
+    .modal-form{display:grid;gap:10px}.modal-form .row{display:grid;gap:10px}.modal-form label{font-size:9px;color:var(--muted);display:block;margin-bottom:5px}.modal-form input,.modal-form select,.modal-form textarea{width:100%;border:1px solid var(--line);background:var(--surface-2);color:var(--text);border-radius:14px;padding:10px 12px;outline:none}.modal-form input,.modal-form select{height:46px}.modal-form textarea{min-height:92px;resize:vertical}.modal-form input:focus,.modal-form select:focus,.modal-form textarea:focus{border-color:rgba(37,99,235,.5);box-shadow:0 0 0 4px rgba(37,99,235,.08)}
+    .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:6px}.modal-actions button{height:47px;border-radius:14px;font-weight:800}.save{background:var(--primary-2);color:#fff}.cancel{background:var(--surface-2);border:1px solid var(--line);color:var(--text)}
+    .toast{position:fixed;z-index:120;left:50%;bottom:16px;transform:translate(-50%,20px);padding:11px 15px;border-radius:13px;background:#0f172a;color:#fff;font-size:10px;box-shadow:0 16px 40px rgba(0,0,0,.24);opacity:0;pointer-events:none;transition:.35s ease}.toast.show{opacity:1;transform:translate(-50%,0)}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media (min-width:700px){
+      .app-shell{padding:20px 18px 40px}.content{padding-top:20px}.hero{grid-template-columns:1.1fr .9fr;align-items:stretch}.stats{grid-template-columns:repeat(4,1fr)}.toolbar{grid-template-columns:1.6fr .8fr}.list{grid-template-columns:repeat(2,minmax(0,1fr))}.modal-form .row{grid-template-columns:1fr 1fr}.modal-backdrop{place-items:center}.modal{border-radius:26px}
+      h1{font-size:34px}
+    }
+    @media (max-width:980px){.brand-copy span{display:none}}
+    @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation-duration:.001ms!important;transition-duration:.001ms!important}}
+  </style>
+</head>
+<body>
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-head">
+        <div class="login-mark">د</div>
+        <div><strong>دُغري — لوحة الإدارة</strong><span>سجّل دخولك لإدارة المساهمات</span></div>
+      </div>
+      <form id="loginForm">
+        <div class="field"><label for="email">البريد الإلكتروني</label><input id="email" type="email" autocomplete="username" required></div>
+        <div class="field"><label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" required></div>
+        <button class="login-btn" id="loginBtn" type="submit">دخول</button>
+      </form>
+      <div class="login-note">الدخول يتم عن طريق Supabase Auth. كلمة المرور مش مكتوبة في الكود.</div>
+    </div>
+  </div>
+
+  <div class="app-shell" id="app" hidden>
+    <header class="topbar">
+      <div class="brand"><div class="brand-mark">د</div><div class="brand-copy"><strong>دُغري</strong><span>لوحة الإدارة والمراجعة</span></div></div>
+      <div class="top-actions">
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="تبديل الوضع"><span id="themeIcon">☾</span></button>
+        <button class="logout-btn" id="logoutBtn" type="button">خروج</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="hero">
+        <div class="hero-card"><div class="eyebrow">CONTROL CENTER / Dُغري</div><h1>أهلاً بيك في لوحة الإدارة.</h1><p>هنا تراجع المساهمات، تعتمد المعلومة، تحدد النقاط، وتتحكم في البيانات اللي تظهر للمساهمين.</p></div>
+        <div class="stats">
+          <div class="stat"><span class="dot"></span><div class="label">كل المساهمات</div><strong id="totalCount">0</strong></div>
+          <div class="stat pending"><span class="dot"></span><div class="label">تحت المراجعة</div><strong id="pendingCount">0</strong></div>
+          <div class="stat approved"><span class="dot"></span><div class="label">معتمدة</div><strong id="approvedCount">0</strong></div>
+          <div class="stat rejected"><span class="dot"></span><div class="label">مرفوضة</div><strong id="rejectedCount">0</strong></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div><h2>المساهمات</h2><p>راجع كل مساهمة واتخذ الإجراء المناسب.</p></div><button class="icon-btn" id="refreshBtn" title="تحديث">↻</button></div>
+        <div class="toolbar">
+          <div class="input-wrap"><input id="searchInput" placeholder="ابحث بالاسم أو رقم الموبايل..." autocomplete="off"></div>
+          <div class="input-wrap"><select id="statusFilter"><option value="all">كل الحالات</option><option value="pending">تحت المراجعة</option><option value="approved">معتمدة</option><option value="rejected">مرفوضة</option></select></div>
+        </div>
+        <div id="contributionsList" class="list"><div class="loader"><div class="spinner"></div>جاري تحميل المساهمات...</div></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head"><h3 id="modalTitle">تعديل المساهمة</h3><button class="modal-close" id="modalClose" type="button">×</button></div>
+      <form class="modal-form" id="editForm">
+        <div class="row"><div><label for="editName">اسم المساهم</label><input id="editName" required></div><div><label for="editPhone">رقم الموبايل</label><input id="editPhone" required></div></div>
+        <div class="row"><div><label for="editType">نوع المساهمة</label><select id="editType"><option value="route">أضيف خط مواصلات</option><option value="stop">أضيف موقف أو نقطة ركوب</option><option value="correction">أصحح معلومة</option><option value="driver">أنا سائق</option></select></div><div><label for="editStatus">الحالة</label><select id="editStatus"><option value="pending">تحت المراجعة</option><option value="approved">معتمدة</option><option value="rejected">مرفوضة</option></select></div></div>
+        <div><label for="editPoints">النقاط</label><input id="editPoints" type="number" min="0" step="1" inputmode="numeric" required></div>
+        <div><label for="editData">بيانات المساهمة (JSON)</label><textarea id="editData" dir="ltr" spellcheck="false" required></textarea></div>
+        <div class="modal-actions"><button class="cancel" id="cancelEdit" type="button">إلغاء</button><button class="save" type="submit">حفظ التعديلات</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
