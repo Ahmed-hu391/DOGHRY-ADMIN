@@ -1,587 +1,1103 @@
-const SUPABASE_URL = 'https://ubwutnxafcrcpylpvqgs.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_NSZ3i0xOCLLx9bH3zgGJuQ_rWCjJoRJ';
+const SUPABASE_URL =
+  'https://ubwutnxafcrcpylpvqgs.supabase.co';
 
-const sb = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
+const SUPABASE_KEY =
+  'sb_publishable_NSZ3i0xOCLLx9bH3zgGJuQ_rWCjJoRJ';
 
-const $ = (id) => document.getElementById(id);
-const root = document.documentElement;
+const sb =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
 
-const app = $('app');
-const loginScreen = $('loginScreen');
-const loginForm = $('loginForm');
-const loginBtn = $('loginBtn');
-const listEl = $('contributionsList');
-const modalBackdrop = $('modalBackdrop');
+
+/* =========================
+   Elements
+========================= */
+
+const $ = id =>
+  document.getElementById(id);
+
+const root =
+  document.documentElement;
+
+const app =
+  $('app');
+
+const loginScreen =
+  $('loginScreen');
+
+const loginForm =
+  $('loginForm');
+
+const loginBtn =
+  $('loginBtn');
+
+const listEl =
+  $('contributionsList');
+
+const modalBackdrop =
+  $('modalBackdrop');
+
 
 let allContributions = [];
+
 let editingId = null;
 
+
+/* =========================
+   Labels
+========================= */
+
 const typeLabels = {
-  route: '🚌 خط مواصلات',
-  stop: '📍 موقف / نقطة ركوب',
-  correction: '✏️ تصحيح معلومة',
-  driver: '🚐 سائق'
+
+  route:
+    '🚌 خط مواصلات',
+
+  stop:
+    '📍 موقف / نقطة ركوب',
+
+  correction:
+    '✏️ تصحيح معلومة',
+
+  driver:
+    '🚐 سائق'
+
 };
+
 
 const statusLabels = {
-  pending: 'تحت المراجعة',
-  approved: 'معتمدة',
-  rejected: 'مرفوضة'
+
+  pending:
+    'تحت المراجعة',
+
+  approved:
+    'معتمدة',
+
+  rejected:
+    'مرفوضة'
+
 };
+
 
 const fieldLabels = {
-  routeFrom: 'من',
-  routeTo: 'إلى',
-  routeStops: 'المواقف',
-  routeTransport: 'نوع المواصلات',
-  routeFare: 'الأجرة',
 
-  stopName: 'اسم الموقف',
-  stopArea: 'المنطقة',
-  stopDetails: 'التفاصيل',
-  stopTransport: 'نوع المواصلات',
+  routeFrom:
+    'من',
 
-  correctionSubject: 'المعلومة المطلوب تصحيحها',
-  correctionDetails: 'التصحيح',
+  routeTo:
+    'إلى',
 
-  driverRoute: 'الخط',
-  driverTransport: 'نوع المواصلات',
-  driverDetails: 'التفاصيل',
-  driverExtra: 'ملاحظات'
+  routeStops:
+    'المواقف',
+
+  routeTransport:
+    'نوع المواصلات',
+
+  routeFare:
+    'الأجرة',
+
+  stopName:
+    'اسم الموقف',
+
+  stopArea:
+    'المنطقة',
+
+  stopDetails:
+    'التفاصيل',
+
+  stopTransport:
+    'نوع المواصلات',
+
+  correctionSubject:
+    'المعلومة',
+
+  correctionDetails:
+    'التصحيح',
+
+  driverRoute:
+    'الخط',
+
+  driverTransport:
+    'نوع المواصلات',
+
+  driverDetails:
+    'التفاصيل',
+
+  driverExtra:
+    'ملاحظات'
+
 };
+
 
 /* =========================
    Theme
 ========================= */
 
-function applyTheme(theme) {
-  root.dataset.theme = theme;
+function applyTheme(theme){
 
-  const icon = $('themeIcon');
+  root.dataset.theme =
+    theme;
 
-  if (icon) {
-    icon.textContent = theme === 'dark' ? '☀' : '☾';
+  const icon =
+    $('themeIcon');
+
+  if(icon){
+
+    icon.textContent =
+      theme === 'dark'
+        ? '☀'
+        : '☾';
+
   }
 
-  localStorage.setItem('dughri-admin-theme', theme);
+  localStorage.setItem(
+    'dughri-admin-theme',
+    theme
+  );
+
 }
 
+
 applyTheme(
-  localStorage.getItem('dughri-admin-theme') || 'dark'
+
+  localStorage.getItem(
+    'dughri-admin-theme'
+  ) || 'dark'
+
 );
 
-$('themeToggle')?.addEventListener('click', () => {
-  applyTheme(
-    root.dataset.theme === 'dark'
-      ? 'light'
-      : 'dark'
+
+$('themeToggle')
+  ?.addEventListener(
+    'click',
+    () => {
+
+      applyTheme(
+
+        root.dataset.theme === 'dark'
+          ? 'light'
+          : 'dark'
+
+      );
+
+    }
   );
-});
+
+
+/* =========================
+   Toast
+========================= */
+
+function showToast(message){
+
+  const toast =
+    $('toast');
+
+  if(!toast) return;
+
+  toast.textContent =
+    message;
+
+  toast.classList.add(
+    'show'
+  );
+
+  clearTimeout(
+    showToast.timer
+  );
+
+  showToast.timer =
+    setTimeout(() => {
+
+      toast.classList.remove(
+        'show'
+      );
+
+    },3200);
+
+}
+
 
 /* =========================
    Helpers
 ========================= */
 
-function showToast(message) {
-  const toast = $('toast');
+function formatDate(value){
 
-  if (!toast) return;
+  try{
 
-  toast.textContent = message;
-  toast.classList.add('show');
+    return new Intl.DateTimeFormat(
+      'ar-EG',
+      {
+        dateStyle:'medium',
+        timeStyle:'short'
+      }
+    ).format(
+      new Date(value)
+    );
 
-  clearTimeout(showToast.timer);
+  }catch{
 
-  showToast.timer = setTimeout(() => {
-    toast.classList.remove('show');
-  }, 3200);
-}
-
-function formatDate(value) {
-  try {
-    return new Intl.DateTimeFormat('ar-EG', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    }).format(new Date(value));
-  } catch {
     return value || '';
+
   }
+
 }
 
-function escapeHtml(value) {
-  return String(value ?? '').replace(
+
+function escapeHtml(value){
+
+  return String(
+    value ?? ''
+  ).replace(
     /[&<>"']/g,
     char => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
+
+      '&':'&amp;',
+      '<':'&lt;',
+      '>':'&gt;',
+      '"':'&quot;',
+      "'":'&#39;'
+
     }[char])
   );
+
 }
 
-function getData(row) {
-  return row?.data && typeof row.data === 'object'
-    ? row.data
-    : {};
-}
 
-/*
-  Visibility is stored inside data.public_visible
-  so we don't need to add another database column.
-*/
-function isPublicVisible(row) {
-  const data = getData(row);
+function getData(row){
 
-  if (data.public_visible === undefined) {
-    return true;
+  if(
+    row &&
+    row.data &&
+    typeof row.data === 'object'
+  ){
+
+    return row.data;
+
   }
 
-  return data.public_visible === true ||
-         data.public_visible === 'true';
+  return {};
+
 }
 
-function getVisibilityLabel(row) {
-  return isPublicVisible(row)
-    ? 'ظاهر للمساهمين'
-    : 'مخفي عن المساهمين';
+
+/*
+  Visibility is stored inside data.public_visible.
+
+  This means we don't need to add
+  another database column.
+*/
+
+function isPublicVisible(row){
+
+  const data =
+    getData(row);
+
+  if(
+    data.public_visible === undefined
+  ){
+
+    return true;
+
+  }
+
+  return (
+    data.public_visible === true ||
+    data.public_visible === 'true'
+  );
+
 }
 
-function getVisibilityClass(row) {
-  return isPublicVisible(row)
-    ? 'visible'
-    : 'hidden';
-}
 
 /* =========================
-   Clear Contribution Details
+   Details
 ========================= */
 
-function contributionDetails(row) {
-  const data = getData(row);
+function contributionDetails(row){
 
-  const entries = Object.entries(data)
-    .filter(([key]) => {
-      return key !== 'phone' &&
-             key !== 'public_visible';
-    })
-    .filter(([, value]) => {
-      return value !== null &&
-             value !== undefined &&
-             String(value).trim() !== '';
-    });
+  const data =
+    getData(row);
 
-  if (!entries.length) {
+  const entries =
+    Object.entries(data)
+
+      .filter(([key]) =>
+        key !== 'phone' &&
+        key !== 'public_visible'
+      )
+
+      .filter(([,value]) =>
+        value !== null &&
+        value !== undefined &&
+        String(value).trim() !== ''
+      );
+
+
+  if(!entries.length){
+
     return `
       <div class="no-details">
         لا توجد تفاصيل إضافية.
       </div>
     `;
+
   }
 
+
   return `
-    <div class="details-list">
-      ${entries.map(([key, value]) => `
-        <div class="detail-row">
-          <span>${escapeHtml(fieldLabels[key] || key)}</span>
-          <strong>${escapeHtml(value)}</strong>
-        </div>
-      `).join('')}
+
+    <div class="details-title">
+      تفاصيل المعلومة
     </div>
+
+    <div class="details-list">
+
+      ${entries.map(
+        ([key,value]) => `
+
+          <div class="detail-row">
+
+            <span>
+              ${escapeHtml(
+                fieldLabels[key] ||
+                key
+              )}
+            </span>
+
+            <strong>
+              ${escapeHtml(value)}
+            </strong>
+
+          </div>
+
+        `
+      ).join('')}
+
+    </div>
+
   `;
+
 }
 
+
 /* =========================
-   Load Data
+   Load Contributions
 ========================= */
 
-async function loadContributions() {
+async function loadContributions(){
+
   listEl.innerHTML = `
+
     <div class="loader">
+
       <div class="spinner"></div>
-      <span>جاري تحديث البيانات...</span>
+
+      <span>
+        جاري تحديث البيانات...
+      </span>
+
     </div>
+
   `;
+
 
   const {
     data,
     error
-  } = await sb
-    .from('contributions')
-    .select('*')
-    .order('created_at', {
-      ascending: false
-    });
+  } =
+    await sb
 
-  if (error) {
+      .from('contributions')
+
+      .select('*')
+
+      .order(
+        'created_at',
+        {
+          ascending:false
+        }
+      );
+
+
+  if(error){
+
     console.error(error);
 
     listEl.innerHTML = `
+
       <div class="empty">
-        <strong>حصلت مشكلة في تحميل البيانات</strong>
+
+        <strong>
+          حصلت مشكلة في تحميل البيانات
+        </strong>
+
         <span>
-          راجع صلاحيات Supabase أو الاتصال وبعدين جرّب تحديث الصفحة.
+          راجع صلاحيات Supabase
+          أو الاتصال وبعدين جرّب تحديث الصفحة.
         </span>
+
       </div>
+
     `;
 
-    showToast(error.message || 'تعذر تحميل البيانات');
+    showToast(
+      error.message ||
+      'تعذر تحميل البيانات'
+    );
+
     return;
+
   }
 
-  allContributions = data || [];
+
+  allContributions =
+    data || [];
+
 
   updateStats();
+
   renderList();
+
 }
+
 
 /* =========================
    Statistics
 ========================= */
 
-function updateStats() {
-  const total = allContributions.length;
+function updateStats(){
 
-  const pending = allContributions.filter(
-    row => row.status === 'pending'
-  ).length;
+  const total =
+    allContributions.length;
 
-  const approved = allContributions.filter(
-    row => row.status === 'approved'
-  ).length;
 
-  const rejected = allContributions.filter(
-    row => row.status === 'rejected'
-  ).length;
+  const pending =
+    allContributions.filter(
+      row =>
+        row.status === 'pending'
+    ).length;
 
-  const visible = allContributions.filter(
-    row => row.status === 'approved' &&
-           isPublicVisible(row)
-  ).length;
 
-  $('totalCount').textContent = total;
-  $('pendingCount').textContent = pending;
-  $('approvedCount').textContent = approved;
-  $('rejectedCount').textContent = rejected;
+  const approved =
+    allContributions.filter(
+      row =>
+        row.status === 'approved'
+    ).length;
 
-  const visibleCount = $('visibleCount');
 
-  if (visibleCount) {
-    visibleCount.textContent = visible;
-  }
+  const rejected =
+    allContributions.filter(
+      row =>
+        row.status === 'rejected'
+    ).length;
+
+
+  /*
+    "Visible" means the admin chose
+    to show it publicly.
+
+    Status does NOT affect visibility.
+  */
+
+  const visible =
+    allContributions.filter(
+      row =>
+        isPublicVisible(row)
+    ).length;
+
+
+  $('totalCount').textContent =
+    total;
+
+  $('pendingCount').textContent =
+    pending;
+
+  $('approvedCount').textContent =
+    approved;
+
+  $('rejectedCount').textContent =
+    rejected;
+
+  $('visibleCount').textContent =
+    visible;
+
 }
 
+
 /* =========================
-   Render
+   Render List
 ========================= */
 
-function renderList() {
-  const query = $('searchInput').value
-    .trim()
-    .toLowerCase();
+function renderList(){
 
-  const filter = $('statusFilter').value;
+  const query =
+    $('searchInput')
+      .value
+      .trim()
+      .toLowerCase();
 
-  const rows = allContributions.filter(row => {
-    const searchableText = `
-      ${row.contributor_name || ''}
-      ${row.phone || ''}
-      ${typeLabels[row.type] || row.type || ''}
-    `.toLowerCase();
 
-    return (
-      (!query || searchableText.includes(query)) &&
-      (filter === 'all' || row.status === filter)
+  const filter =
+    $('statusFilter')
+      .value;
+
+
+  const rows =
+    allContributions.filter(
+      row => {
+
+        const searchableText = `
+
+          ${row.contributor_name || ''}
+
+          ${row.phone || ''}
+
+          ${typeLabels[row.type] || ''}
+
+          ${row.type || ''}
+
+        `.toLowerCase();
+
+
+        return (
+
+          (
+            !query ||
+            searchableText.includes(
+              query
+            )
+          )
+
+          &&
+
+          (
+            filter === 'all' ||
+            row.status === filter
+          )
+
+        );
+
+      }
     );
-  });
 
-  if (!rows.length) {
+
+  if(!rows.length){
+
     listEl.innerHTML = `
+
       <div class="empty">
-        <strong>مفيش نتائج</strong>
+
+        <strong>
+          مفيش نتائج
+        </strong>
+
         <span>
-          جرّب تغير البحث أو حالة الفلترة.
+          جرّب تغيّر البحث أو الفلترة.
         </span>
+
       </div>
+
     `;
 
     return;
+
   }
 
-  listEl.innerHTML = rows.map(row => {
-    const initial = escapeHtml(
-      (row.contributor_name || 'د')
-        .trim()
-        .charAt(0)
-        .toUpperCase()
-    );
 
-    const status =
-      statusLabels[row.status] ||
-      row.status ||
-      'غير محدد';
+  listEl.innerHTML =
 
-    const points =
-      Number.isFinite(row.points)
-        ? row.points
-        : 0;
+    rows.map(
+      row => {
 
-    const visible = isPublicVisible(row);
+        const initial =
+          escapeHtml(
+            (
+              row.contributor_name ||
+              'د'
+            )
+              .trim()
+              .charAt(0)
+              .toUpperCase()
+          );
 
-    return `
-      <article
-        class="card"
-        data-id="${escapeHtml(row.id)}"
-      >
 
-        <div class="card-top">
+        const status =
+          statusLabels[
+            row.status
+          ] ||
+          row.status ||
+          'غير محدد';
 
-          <div class="avatar">
-            ${initial}
-          </div>
 
-          <div class="card-main">
+        const points =
+          Number.isFinite(
+            row.points
+          )
+            ? row.points
+            : 0;
 
-            <strong>
-              ${escapeHtml(row.contributor_name)}
-            </strong>
 
-            <small>
-              ${escapeHtml(
-                typeLabels[row.type] ||
-                row.type ||
-                'مساهمة'
-              )}
-              ·
-              ${escapeHtml(
-                formatDate(row.created_at)
-              )}
-            </small>
+        const visible =
+          isPublicVisible(row);
 
-          </div>
 
-          <span class="status ${escapeHtml(row.status)}">
-            ${escapeHtml(status)}
-          </span>
+        return `
 
-        </div>
-
-        <div class="visibility-line">
-
-          <span class="visibility-badge ${getVisibilityClass(row)}">
-            ${visible ? '● ظاهر' : '○ مخفي'}
-          </span>
-
-          <span>
-            ${getVisibilityLabel(row)}
-          </span>
-
-        </div>
-
-        <div class="info-grid">
-
-          <div class="info-box">
-            <span>الموبايل</span>
-            <strong dir="ltr">
-              ${escapeHtml(row.phone)}
-            </strong>
-          </div>
-
-          <div class="info-box">
-            <span>النقاط</span>
-            <strong>
-              ${points}
-            </strong>
-          </div>
-
-        </div>
-
-        <div class="details-container">
-          ${contributionDetails(row)}
-        </div>
-
-        <div class="card-actions">
-
-          <button
-            class="action action-primary"
-            data-action="edit"
-            data-id="${row.id}"
+          <article
+            class="card"
+            data-id="${escapeHtml(row.id)}"
           >
-            تعديل
-          </button>
 
-          <button
-            class="action action-visibility"
-            data-action="visibility"
-            data-id="${row.id}"
-          >
-            ${visible ? 'إخفاء' : 'إظهار'}
-          </button>
+            <div class="card-top">
 
-          ${
-            row.status === 'pending'
-              ? `
-                <button
-                  class="action action-success"
-                  data-action="approve"
-                  data-id="${row.id}"
-                >
-                  اعتماد
-                </button>
+              <div class="avatar">
+                ${initial}
+              </div>
 
-                <button
-                  class="action action-danger"
-                  data-action="reject"
-                  data-id="${row.id}"
-                >
-                  رفض
-                </button>
-              `
-              : ''
-          }
 
-          <button
-            class="action action-delete"
-            data-action="delete"
-            data-id="${row.id}"
-          >
-            حذف
-          </button>
+              <div class="card-main">
 
-        </div>
+                <strong>
+                  ${escapeHtml(
+                    row.contributor_name
+                  )}
+                </strong>
 
-      </article>
-    `;
-  }).join('');
+                <small>
+
+                  ${escapeHtml(
+                    typeLabels[row.type] ||
+                    row.type ||
+                    'مساهمة'
+                  )}
+
+                  ·
+
+                  ${escapeHtml(
+                    formatDate(
+                      row.created_at
+                    )
+                  )}
+
+                </small>
+
+              </div>
+
+
+              <span
+                class="status
+                ${escapeHtml(
+                  row.status
+                )}"
+              >
+
+                ${escapeHtml(
+                  status
+                )}
+
+              </span>
+
+            </div>
+
+
+            <div class="visibility-line">
+
+              <span
+                class="
+                  visibility-badge
+                  ${visible
+                    ? 'visible'
+                    : 'hidden'}
+                "
+              >
+
+                ${visible
+                  ? '● ظاهر'
+                  : '○ مخفي'}
+
+              </span>
+
+
+              <span>
+
+                ${visible
+                  ? 'المساهمة ظاهرة للمساهمين'
+                  : 'المساهمة مخفية عن المساهمين'}
+
+              </span>
+
+            </div>
+
+
+            <div class="info-grid">
+
+              <div class="info-box">
+
+                <span>
+                  الموبايل
+                </span>
+
+                <strong dir="ltr">
+                  ${escapeHtml(
+                    row.phone
+                  )}
+                </strong>
+
+              </div>
+
+
+              <div class="info-box">
+
+                <span>
+                  النقاط
+                </span>
+
+                <strong>
+                  ${points}
+                </strong>
+
+              </div>
+
+            </div>
+
+
+            <div class="details-container">
+
+              ${contributionDetails(row)}
+
+            </div>
+
+
+            <div class="card-actions">
+
+              <button
+                class="
+                  action
+                  action-primary
+                "
+                data-action="edit"
+                data-id="${row.id}"
+              >
+                تعديل
+              </button>
+
+
+              <button
+                class="
+                  action
+                  action-visibility
+                "
+                data-action="visibility"
+                data-id="${row.id}"
+              >
+
+                ${visible
+                  ? 'إخفاء'
+                  : 'إظهار'}
+
+              </button>
+
+
+              ${
+                row.status === 'pending'
+
+                ? `
+
+                  <button
+                    class="
+                      action
+                      action-success
+                    "
+                    data-action="approve"
+                    data-id="${row.id}"
+                  >
+                    اعتماد
+                  </button>
+
+
+                  <button
+                    class="
+                      action
+                      action-danger
+                    "
+                    data-action="reject"
+                    data-id="${row.id}"
+                  >
+                    رفض
+                  </button>
+
+                `
+
+                : ''
+
+              }
+
+
+              <button
+                class="
+                  action
+                  action-delete
+                "
+                data-action="delete"
+                data-id="${row.id}"
+              >
+                حذف
+              </button>
+
+            </div>
+
+          </article>
+
+        `;
+
+      }
+    ).join('');
+
 }
 
+
 /* =========================
-   Status
+   Update Status
 ========================= */
 
-async function updateStatus(id, status) {
+async function updateStatus(
+  id,
+  status
+){
+
   const {
     error
-  } = await sb
-    .from('contributions')
-    .update({
-      status
-    })
-    .eq('id', id);
+  } =
 
-  if (error) {
+    await sb
+
+      .from('contributions')
+
+      .update({
+        status
+      })
+
+      .eq(
+        'id',
+        id
+      );
+
+
+  if(error){
+
     console.error(error);
-    showToast('تعذر تحديث الحالة');
+
+    showToast(
+      'تعذر تحديث الحالة'
+    );
+
     return;
+
   }
 
+
   showToast(
+
     status === 'approved'
+
       ? 'تم اعتماد المساهمة.'
+
       : 'تم رفض المساهمة.'
+
   );
+
 
   await loadContributions();
+
 }
 
+
 /* =========================
-   Visibility
+   Update Visibility
 ========================= */
 
-async function updateVisibility(id, visible) {
-  const row = allContributions.find(
-    item => String(item.id) === String(id)
-  );
+async function updateVisibility(
+  id,
+  visible
+){
 
-  if (!row) return;
+  const row =
+    allContributions.find(
+      item =>
+        String(item.id) ===
+        String(id)
+    );
 
-  const currentData = getData(row);
+
+  if(!row) return;
+
+
+  const oldData =
+    getData(row);
+
 
   const newData = {
-    ...currentData,
-    public_visible: visible
+
+    ...oldData,
+
+    public_visible:
+      visible
+
   };
+
 
   const {
     error
-  } = await sb
-    .from('contributions')
-    .update({
-      data: newData
-    })
-    .eq('id', id);
+  } =
 
-  if (error) {
+    await sb
+
+      .from('contributions')
+
+      .update({
+
+        data:
+          newData
+
+      })
+
+      .eq(
+        'id',
+        id
+      );
+
+
+  if(error){
+
     console.error(error);
-    showToast('تعذر تغيير ظهور المساهمة');
+
+    showToast(
+      'تعذر تغيير ظهور المساهمة'
+    );
+
     return;
+
   }
 
+
   showToast(
+
     visible
+
       ? 'المساهمة أصبحت ظاهرة.'
+
       : 'المساهمة أصبحت مخفية.'
+
   );
 
+
   await loadContributions();
+
 }
+
 
 /* =========================
    Delete
 ========================= */
 
-async function removeContribution(id) {
-  const confirmed = confirm(
-    'متأكد إنك عايز تحذف المساهمة دي نهائيًا؟'
-  );
+async function removeContribution(
+  id
+){
 
-  if (!confirmed) return;
+  const confirmed =
+    confirm(
+      'متأكد إنك عايز تحذف المساهمة دي نهائيًا؟'
+    );
+
+
+  if(!confirmed)
+    return;
+
 
   const {
     error
-  } = await sb
-    .from('contributions')
-    .delete()
-    .eq('id', id);
+  } =
 
-  if (error) {
+    await sb
+
+      .from('contributions')
+
+      .delete()
+
+      .eq(
+        'id',
+        id
+      );
+
+
+  if(error){
+
     console.error(error);
-    showToast('تعذر حذف المساهمة');
+
+    showToast(
+      'تعذر حذف المساهمة'
+    );
+
     return;
+
   }
 
-  showToast('تم حذف المساهمة.');
+
+  showToast(
+    'تم حذف المساهمة.'
+  );
+
 
   await loadContributions();
+
 }
 
+
 /* =========================
-   Edit Modal
+   Open Edit
 ========================= */
 
-function openEdit(row) {
-  editingId = row.id;
+function openEdit(row){
+
+  editingId =
+    row.id;
+
 
   $('editName').value =
-    row.contributor_name || '';
+    row.contributor_name ||
+    '';
+
 
   $('editPhone').value =
-    row.phone || '';
+    row.phone ||
+    '';
+
 
   $('editType').value =
-    row.type || 'route';
+    row.type ||
+    'route';
+
 
   $('editStatus').value =
-    row.status || 'pending';
+    row.status ||
+    'pending';
+
 
   $('editPoints').value =
-    Number.isFinite(row.points)
+    Number.isFinite(
+      row.points
+    )
       ? row.points
       : 0;
+
+
+  $('editVisibility').value =
+    isPublicVisible(row)
+      ? 'true'
+      : 'false';
+
 
   $('editData').value =
     JSON.stringify(
@@ -590,110 +1106,169 @@ function openEdit(row) {
       2
     );
 
-  const visibility =
-    $('editVisibility');
 
-  if (visibility) {
-    visibility.value =
-      isPublicVisible(row)
-        ? 'true'
-        : 'false';
-  }
+  modalBackdrop.classList.add(
+    'open'
+  );
 
-  modalBackdrop.classList.add('open');
 
-  setTimeout(() => {
-    $('editName')?.focus();
-  }, 180);
+  setTimeout(
+    () => {
+
+      $('editName')?.focus();
+
+    },
+    180
+  );
+
 }
 
-function closeModal() {
-  editingId = null;
 
-  modalBackdrop.classList.remove('open');
+/* =========================
+   Close Modal
+========================= */
+
+function closeModal(){
+
+  editingId =
+    null;
+
+  modalBackdrop.classList.remove(
+    'open'
+  );
+
 }
+
 
 /* =========================
    Save Edit
 ========================= */
 
-$('editForm').addEventListener(
-  'submit',
-  async event => {
+$('editForm')
+  .addEventListener(
+    'submit',
+    async event => {
 
-    event.preventDefault();
+      event.preventDefault();
 
-    if (!editingId) return;
 
-    const points = Math.max(
-      0,
-      parseInt(
-        $('editPoints').value,
-        10
-      ) || 0
-    );
+      if(!editingId)
+        return;
 
-    let data;
 
-    try {
-      data = JSON.parse(
-        $('editData').value || '{}'
-      );
-    } catch {
+      const points =
+        Math.max(
+          0,
+          parseInt(
+            $('editPoints').value,
+            10
+          ) || 0
+        );
+
+
+      let data;
+
+
+      try{
+
+        data =
+          JSON.parse(
+            $('editData').value ||
+            '{}'
+          );
+
+      }
+
+      catch{
+
+        showToast(
+          'تفاصيل المساهمة لازم تكون JSON صحيح.'
+        );
+
+        return;
+
+      }
+
+
+      data.public_visible =
+        $('editVisibility').value ===
+        'true';
+
+
+      const payload = {
+
+        contributor_name:
+          $('editName')
+            .value
+            .trim(),
+
+        phone:
+          $('editPhone')
+            .value
+            .trim(),
+
+        type:
+          $('editType')
+            .value,
+
+        status:
+          $('editStatus')
+            .value,
+
+        points,
+
+        data
+
+      };
+
+
+      const {
+        error
+      } =
+
+        await sb
+
+          .from('contributions')
+
+          .update(
+            payload
+          )
+
+          .eq(
+            'id',
+            editingId
+          );
+
+
+      if(error){
+
+        console.error(error);
+
+        showToast(
+          'فشل حفظ التعديلات'
+        );
+
+        return;
+
+      }
+
+
+      closeModal();
+
+
       showToast(
-        'بيانات المساهمة مش JSON صحيح'
+        'تم حفظ التعديلات بنجاح.'
       );
-      return;
+
+
+      await loadContributions();
+
     }
+  );
 
-    data.public_visible =
-      $('editVisibility')?.value !== 'false';
-
-    const payload = {
-      contributor_name:
-        $('editName').value.trim(),
-
-      phone:
-        $('editPhone').value.trim(),
-
-      type:
-        $('editType').value,
-
-      status:
-        $('editStatus').value,
-
-      points,
-
-      data
-    };
-
-    const {
-      error
-    } = await sb
-      .from('contributions')
-      .update(payload)
-      .eq('id', editingId);
-
-    if (error) {
-      console.error(error);
-      showToast(
-        'فشل حفظ التعديلات'
-      );
-      return;
-    }
-
-    closeModal();
-
-    showToast(
-      'تم حفظ التعديلات بنجاح.'
-    );
-
-    await loadContributions();
-  }
-);
 
 /* =========================
-   Actions
+   Card Actions
 ========================= */
 
 listEl.addEventListener(
@@ -705,55 +1280,90 @@ listEl.addEventListener(
         '[data-action]'
       );
 
-    if (!button) return;
+
+    if(!button)
+      return;
+
 
     const row =
       allContributions.find(
         item =>
           String(item.id) ===
-          String(button.dataset.id)
+          String(
+            button.dataset.id
+          )
       );
 
-    if (!row) return;
+
+    if(!row)
+      return;
+
 
     const action =
       button.dataset.action;
 
-    if (action === 'approve') {
+
+    if(
+      action === 'approve'
+    ){
+
       await updateStatus(
         row.id,
         'approved'
       );
+
     }
 
-    else if (action === 'reject') {
+
+    else if(
+      action === 'reject'
+    ){
+
       await updateStatus(
         row.id,
         'rejected'
       );
+
     }
 
-    else if (action === 'visibility') {
+
+    else if(
+      action === 'visibility'
+    ){
+
       await updateVisibility(
         row.id,
         !isPublicVisible(row)
       );
+
     }
 
-    else if (action === 'delete') {
+
+    else if(
+      action === 'delete'
+    ){
+
       await removeContribution(
         row.id
       );
+
     }
 
-    else if (action === 'edit') {
+
+    else if(
+      action === 'edit'
+    ){
+
       openEdit(row);
+
     }
+
   }
 );
 
+
 /* =========================
-   Search / Filters
+   Search
 ========================= */
 
 $('searchInput')
@@ -762,11 +1372,13 @@ $('searchInput')
     renderList
   );
 
+
 $('statusFilter')
   ?.addEventListener(
     'change',
     renderList
   );
+
 
 $('refreshBtn')
   ?.addEventListener(
@@ -774,8 +1386,9 @@ $('refreshBtn')
     loadContributions
   );
 
+
 /* =========================
-   Modal
+   Modal Controls
 ========================= */
 
 $('modalClose')
@@ -784,35 +1397,49 @@ $('modalClose')
     closeModal
   );
 
+
 $('cancelEdit')
   ?.addEventListener(
     'click',
     closeModal
   );
 
+
 modalBackdrop.addEventListener(
   'click',
   event => {
-    if (
+
+    if(
       event.target ===
       modalBackdrop
-    ) {
+    ){
+
       closeModal();
+
     }
+
   }
 );
+
 
 document.addEventListener(
   'keydown',
   event => {
-    if (
+
+    if(
       event.key === 'Escape' &&
-      modalBackdrop.classList.contains('open')
-    ) {
+      modalBackdrop.classList.contains(
+        'open'
+      )
+    ){
+
       closeModal();
+
     }
+
   }
 );
+
 
 /* =========================
    Login
@@ -824,24 +1451,41 @@ loginForm.addEventListener(
 
     event.preventDefault();
 
-    loginBtn.disabled = true;
+
+    loginBtn.disabled =
+      true;
+
     loginBtn.textContent =
       'جاري الدخول...';
 
+
     const {
       error
-    } = await sb.auth.signInWithPassword({
-      email:
-        $('email').value.trim(),
+    } =
 
-      password:
-        $('password').value
-    });
+      await sb.auth.signInWithPassword({
 
-    loginBtn.disabled = false;
-    loginBtn.textContent = 'دخول';
+        email:
+          $('email')
+            .value
+            .trim(),
 
-    if (error) {
+        password:
+          $('password')
+            .value
+
+      });
+
+
+    loginBtn.disabled =
+      false;
+
+    loginBtn.textContent =
+      'دخول لوحة الإدارة';
+
+
+    if(error){
+
       console.error(error);
 
       showToast(
@@ -849,14 +1493,18 @@ loginForm.addEventListener(
       );
 
       return;
+
     }
 
+
     showApp();
+
   }
 );
 
+
 /* =========================
-   Auth
+   Logout
 ========================= */
 
 $('logoutBtn')
@@ -867,49 +1515,78 @@ $('logoutBtn')
       await sb.auth.signOut();
 
       showLogin();
+
     }
   );
 
-function showApp() {
+
+/* =========================
+   Auth
+========================= */
+
+function showApp(){
+
   loginScreen.classList.add(
     'hidden'
   );
 
-  app.hidden = false;
+  app.hidden =
+    false;
 
   loadContributions();
+
 }
 
-function showLogin() {
-  app.hidden = true;
+
+function showLogin(){
+
+  app.hidden =
+    true;
 
   loginScreen.classList.remove(
     'hidden'
   );
+
 }
+
 
 sb.auth.onAuthStateChange(
   (_event, session) => {
 
-    if (session) {
+    if(session){
+
       showApp();
-    } else {
+
+    }else{
+
       showLogin();
+
     }
 
   }
 );
 
+
+/* =========================
+   Initial Session
+========================= */
+
 (async () => {
 
   const {
     data
-  } = await sb.auth.getSession();
+  } =
+    await sb.auth.getSession();
 
-  if (data.session) {
+
+  if(data.session){
+
     showApp();
-  } else {
+
+  }else{
+
     showLogin();
+
   }
 
 })();
