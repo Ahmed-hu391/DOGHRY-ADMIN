@@ -5,8 +5,24 @@ const SUPABASE_KEY = 'sb_publishable_NSZ3i0xOCLLx9bH3zgGJuQ_rWCjJoRJ';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* ============ إعدادات سهلة التعديل ============ */
-// المساهمة تظهر في موقع المساهمين لما تكون "معتمدة". لو موقع المساهمين عندك بيعتمد على شرط تاني، عدّل السطر ده بس.
-const isVisibleOnSite = (row) => row.status === 'approved';
+// المساهمة بتظهر في لوحة المساهمين لما تكون "معتمدة" ومش مخفية (show_on_board).
+const isVisibleOnSite = (row) => row.status === 'approved' && row.show_on_board !== false;
+const BOARD_SQL = `alter table public.contributions add column if not exists show_on_board boolean not null default true;
+
+create or replace view public.approved_contributors_public as
+select contributor_name, points
+from public.contributions
+where status = 'approved' and show_on_board = true;`;
+const boardReady = () => !state.rows.length || state.rows.some((r) => 'show_on_board' in r);
+const personKey = (r) => digits(r.phone) || ('n:' + (r.contributor_name || '').trim());
+function summaryOf(r) {
+  const d = r.data || {};
+  if (r.type === 'route') return [d.routeFrom, d.routeTo].filter(Boolean).join(' ← ');
+  if (r.type === 'stop') return [d.stopName, d.stopArea].filter(Boolean).join(' — ');
+  if (r.type === 'correction') return d.correctionSubject || '';
+  if (r.type === 'driver') return d.driverRoute || '';
+  return '';
+}
 const PAGE_SIZE = 30;
 const AUTO_REFRESH_MS = 60000;
 
@@ -105,13 +121,14 @@ function getFiltered() {
 function getPeople() {
   const map = new Map();
   for (const r of state.rows) {
-    const key = digits(r.phone) || ('n:' + (r.contributor_name || '').trim());
+    const key = personKey(r);
     let p = map.get(key);
-    if (!p) { p = { key, name: r.contributor_name, phone: r.phone, total: 0, approved: 0, pending: 0, rejected: 0, points: 0, last: 0 }; map.set(key, p); }
+    if (!p) { p = { key, name: r.contributor_name, phone: r.phone, total: 0, approved: 0, pending: 0, rejected: 0, points: 0, shown: 0, last: 0 }; map.set(key, p); }
     const t = new Date(r.created_at).getTime() || 0;
     if (t >= p.last) { p.last = t; p.name = r.contributor_name || p.name; }
     p.total++; p[r.status] = (p[r.status] || 0) + 1;
     if (r.status === 'approved') p.points += pts(r);
+    if (isVisibleOnSite(r)) p.shown++;
   }
   const q = state.q.trim().toLowerCase();
   return [...map.values()]
@@ -184,9 +201,12 @@ async function load({ silent = false } = {}) {
 
 /* ============ العرض ============ */
 function render() {
-  renderStats(); renderTabsAndToolbar();
+  renderBanner(); renderStats(); renderTabsAndToolbar();
   if (state.tab === 'people') renderPeople(); else renderList();
   renderDetail(); renderBulk();
+}
+function renderBanner() {
+  const b = $('setupBanner'); b.hidden = boardReady();
 }
 function renderStats() {
   const c = { all: state.rows.length, pending: 0, approved: 0, rejected: 0 };
@@ -236,8 +256,8 @@ function renderList() {
     return `<div class="row ${idEq(r.id, state.active) ? 'active' : ''}" data-open="${escapeHtml(r.id)}" tabindex="0" role="button">
       <label class="pick"><input type="checkbox" data-sel="${escapeHtml(r.id)}" ${state.selected.has(String(r.id)) ? 'checked' : ''} aria-label="تحديد"></label>
       <div class="av">${avatarOf(r.contributor_name)}</div>
-      <div class="row-main"><strong>${escapeHtml(r.contributor_name)}</strong><span>${escapeHtml(typeName(r.type))} · ${escapeHtml(relTime(r.created_at))}</span></div>
-      <div class="row-side"><span class="badge ${escapeHtml(r.status)}">${escapeHtml(statusLabels[r.status] || r.status)}</span><span class="vis ${vis ? 'on' : ''}">${ic(vis ? 'eye' : 'eyeoff')}${vis ? 'ظاهر' : 'مش ظاهر'}</span></div>
+      <div class="row-main"><strong>${escapeHtml(r.contributor_name)}</strong><span>${escapeHtml(typeName(r.type))} · ${escapeHtml(relTime(r.created_at))}</span>${summaryOf(r) ? `<span class="sum">${escapeHtml(summaryOf(r))}</span>` : ''}</div>
+      <div class="row-side"><span class="badge ${escapeHtml(r.status)}">${escapeHtml(statusLabels[r.status] || r.status)}</span><span class="vis ${vis ? 'on' : ''}">${ic(vis ? 'eye' : 'eyeoff')}${vis ? 'على اللوحة' : (r.status === 'approved' ? 'مخفية' : 'مش على اللوحة')}</span></div>
     </div>`;
   }).join('');
 }
@@ -248,13 +268,15 @@ function renderPeople() {
   $('listHead').innerHTML = `<span>مرتبين بالنقاط المعتمدة</span><span class="sp"></span><span class="num">${people.length} مساهم</span>`;
   if (!people.length) { $('list').innerHTML = '<div class="empty"><strong>مفيش مساهمين</strong>جرّب تغيّر البحث.</div>'; return; }
   $('list').innerHTML = people.map((p, i) => {
-    const vis = p.approved > 0;
+    const vis = p.shown > 0;
+    const canToggle = p.approved > 0;
     return `<div class="row" data-person="${escapeHtml(p.key)}" tabindex="0" role="button">
       <div class="rank num">${i + 1}</div>
       <div class="av">${avatarOf(p.name)}</div>
       <div class="row-main"><strong>${escapeHtml(p.name)}</strong><span dir="ltr" style="text-align:right">${escapeHtml(p.phone)}</span>
         <div class="chips"><span class="chip gold num">${p.points} نقطة</span><span class="chip num">${p.total} مساهمة</span><span class="chip num">${p.approved} معتمدة</span>${p.pending ? `<span class="chip num">${p.pending} تحت المراجعة</span>` : ''}</div></div>
-      <div class="row-side"><span class="vis ${vis ? 'on' : ''}" style="font-size:13px">${ic(vis ? 'eye' : 'eyeoff')}${vis ? 'ظاهر في الموقع' : 'مش ظاهر'}</span></div>
+      <div class="row-side"><span class="vis ${vis ? 'on' : ''}" style="font-size:13px">${ic(vis ? 'eye' : 'eyeoff')}${vis ? 'ظاهر على اللوحة' : (canToggle ? 'مخفي' : 'مفيش معتمد')}</span>
+        ${canToggle ? `<button class="btn" style="height:34px" data-board="${escapeHtml(p.key)}" data-show="${vis ? '0' : '1'}">${vis ? 'إخفاء' : 'إظهار'}</button>` : ''}</div>
     </div>`;
   }).join('');
 }
@@ -267,9 +289,10 @@ function renderBulk() {
 
 function visInfo(r) {
   const p = pts(r);
-  if (r.status === 'approved') return ['ok', 'check', 'ظاهرة في موقع المساهمين', `المساهم بيظهر باسمه ونقاطه (${p} نقطة من المساهمة دي).`];
-  if (r.status === 'pending') return ['warn', 'eyeoff', 'لسه مش ظاهرة', 'هتظهر في موقع المساهمين أول ما تعتمدها.'];
-  return ['bad', 'x', 'مش ظاهرة', 'المساهمة مرفوضة ومش بتتحسب للمساهم.'];
+  if (r.status === 'approved' && r.show_on_board === false) return ['mute', 'eyeoff', 'معتمدة بس مخفية من اللوحة', 'مش بتظهر ولا بتتحسب نقاطها في لوحة المساهمين لحد ما تظهرها.'];
+  if (r.status === 'approved') return ['ok', 'check', 'ظاهرة في لوحة المساهمين', `المساهم بيظهر باسمه ونقاطه (${p} نقطة من المساهمة دي).`];
+  if (r.status === 'pending') return ['warn', 'eyeoff', 'لسه مش على اللوحة', 'هتظهر في لوحة المساهمين أول ما تعتمدها.'];
+  return ['bad', 'x', 'مش على اللوحة', 'المساهمة مرفوضة ومش بتتحسب للمساهم.'];
 }
 
 function renderDetail() {
@@ -296,6 +319,9 @@ function renderDetail() {
         <span class="badge ${escapeHtml(r.status)}">${escapeHtml(statusLabels[r.status] || r.status)}</span>
         <button class="btn icon sheet-close" data-act="close" aria-label="إغلاق">${ic('x')}</button></div>
       <div class="visbox ${vcls}">${ic(vic)}<div><strong>${vtitle}</strong><span>${vtext}</span></div></div>
+      <div class="sec"><h4>لوحة المساهمين</h4>
+        <div class="switch-row"><div><strong>إظهار في لوحة المساهمين</strong><div class="hint">${r.status === 'approved' ? 'قفلها لو مش عايز الاسم والنقاط دي تظهر للناس.' : 'متاح بعد اعتماد المساهمة.'}</div></div>
+        <button class="switch ${r.status === 'approved' && r.show_on_board !== false ? 'on' : ''}" role="switch" aria-checked="${r.status === 'approved' && r.show_on_board !== false}" data-act="toggleboard" ${r.status === 'approved' ? '' : 'disabled'} aria-label="إظهار في لوحة المساهمين"></button></div></div>
       <div class="sec"><h4>التواصل مع المساهم</h4><div class="contact"><span class="ph" dir="ltr">${escapeHtml(r.phone)}</span>
         ${phone ? `<a class="btn" href="tel:${phone}">${ic('phone')}اتصال</a><a class="btn" href="https://wa.me/${waNumber(r.phone)}" target="_blank" rel="noopener noreferrer">${ic('chat')}واتساب</a>` : ''}</div></div>
       <div class="sec"><h4>تفاصيل المساهمة</h4>${entries.length
@@ -359,6 +385,23 @@ async function setStatus(ids, status, { undoable = true } = {}) {
       if (group.length) await setStatus(group, s, { undoable: false });
     }
   } } : {});
+}
+
+async function setBoard(ids, show, { undoable = true } = {}) {
+  const rows = ids.map(byId).filter((r) => r && (r.show_on_board !== false) !== show);
+  if (!rows.length) return;
+  const prev = rows.map((r) => ({ id: r.id, v: r.show_on_board }));
+  rows.forEach((r) => { r.show_on_board = show; });
+  render();
+  const { data, error } = await sb.from('contributions').update({ show_on_board: show }).in('id', rows.map((r) => r.id)).select('id');
+  if (error || !data || data.length !== rows.length) {
+    console.error(error);
+    prev.forEach((p) => { const r = byId(p.id); if (r) { if (p.v === undefined) delete r.show_on_board; else r.show_on_board = p.v; } });
+    render();
+    toast(/show_on_board/.test(error?.message || '') ? 'لازم تشغّل كود SQL الأول (الزرار الأصفر فوق).' : 'فشل التحديث. راجع الاتصال أو صلاحيات Supabase.', { error: true });
+    return;
+  }
+  toast(show ? 'رجعت تظهر في لوحة المساهمين' : 'اتخفت من لوحة المساهمين', undoable ? { undo: () => setBoard(prev.map((p) => p.id), !show, { undoable: false }) } : {});
 }
 
 async function savePoints() {
@@ -465,8 +508,17 @@ $('moreBtn').addEventListener('click', () => { state.limit += PAGE_SIZE; renderL
 $('refreshBtn').addEventListener('click', () => load());
 $('exportBtn').addEventListener('click', exportCsv);
 $('scrim').addEventListener('click', closeSheet);
+$('copySql').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(BOARD_SQL); toast('اتنسخ الكود. الصقه في Supabase → SQL Editor واضغط Run'); }
+  catch { toast('مقدرتش أنسخ. انسخه يدويًا من README', { error: true }); }
+});
 
 $('list').addEventListener('click', (e) => {
+  const boardBtn = e.target.closest('[data-board]');
+  if (boardBtn) {
+    const ids = state.rows.filter((r) => personKey(r) === boardBtn.dataset.board && r.status === 'approved').map((r) => r.id);
+    setBoard(ids, boardBtn.dataset.show === '1'); return;
+  }
   const person = e.target.closest('[data-person]');
   if (person) {
     const p = getPeople().find((x) => x.key === person.dataset.person);
@@ -490,6 +542,11 @@ $('listHead').addEventListener('change', (e) => {
 });
 $('bulkBar').addEventListener('click', async (e) => {
   const b = e.target.closest('[data-bulk]'); if (!b) return;
+  if (b.dataset.bulk === 'show' || b.dataset.bulk === 'hide') {
+    const ids = [...state.selected].map((s) => byId(s)).filter((r) => r && r.status === 'approved').map((r) => r.id);
+    if (!ids.length) { toast('اختار مساهمات معتمدة الأول', { error: true }); return; }
+    setBoard(ids, b.dataset.bulk === 'show'); return;
+  }
   if (b.dataset.bulk === 'clear') { state.selected.clear(); renderList(); renderBulk(); return; }
   const ids = [...state.selected].map((s) => byId(s)?.id).filter((x) => x !== undefined);
   if (ids.length > 1 && b.dataset.bulk === 'rejected') {
@@ -508,6 +565,7 @@ $('detail').addEventListener('click', (e) => {
   if (act === 'edit') return openEdit(r);
   if (act === 'delete') return removeRow(r.id);
   if (act === 'savepts') return savePoints();
+  if (act === 'toggleboard') return setBoard([r.id], r.show_on_board === false);
   setStatus([r.id], act);
 });
 
