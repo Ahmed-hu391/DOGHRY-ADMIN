@@ -159,6 +159,19 @@
     .scrim{position:fixed;inset:0;background:rgba(2,6,23,.5);z-index:55;opacity:0;visibility:hidden;transition:.25s}
     .scrim.on{opacity:1;visibility:visible}
 
+
+    .row-main .sum{color:var(--text);font-weight:600;opacity:.85}
+    .visbox.mute{background:var(--panel-2);color:var(--muted);border:1px solid var(--line)}
+    .switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px}
+    .switch-row strong{display:block}
+    .switch{flex:none;width:48px;height:28px;border-radius:99px;background:var(--line);position:relative;transition:background .2s}
+    .switch::after{content:"";position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+    .switch.on{background:var(--ok)}
+    .switch.on::after{transform:translateX(-20px)}
+    .switch:disabled{opacity:.45;cursor:not-allowed}
+    .setup{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 16px;margin-bottom:14px;border-radius:14px;background:var(--warn-soft);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent)}
+    .setup div{flex:1;min-width:220px}.setup strong{display:block}.setup span{font-size:13px}
+    .setup .btn{background:var(--warn);border-color:var(--warn);color:#fff}
     /* ---------- login / splash ---------- */
     .splash{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:200}
     .spinner{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--primary);animation:spin .8s linear infinite}
@@ -253,6 +266,10 @@
     </div></header>
 
     <main class="wrap">
+      <div class="setup" id="setupBanner" hidden>
+        <div><strong>خطوة واحدة ناقصة عشان تتحكم في ظهور المساهمين</strong><span>انسخ الكود، افتح Supabase ← SQL Editor، الصقه واضغط Run، وبعدين حدّث الصفحة.</span></div>
+        <button class="btn" id="copySql" type="button">نسخ كود SQL</button>
+      </div>
       <section class="stats" id="stats" aria-label="فلترة بالحالة"></section>
 
       <div class="tabs" role="tablist">
@@ -274,8 +291,10 @@
         <section>
           <div class="bulk" id="bulkBar" hidden>
             <b id="bulkCount"></b>
-            <button class="btn ok" data-bulk="approved" type="button">اعتماد المحدد</button>
-            <button class="btn bad" data-bulk="rejected" type="button">رفض المحدد</button>
+            <button class="btn ok" data-bulk="approved" type="button">اعتماد</button>
+            <button class="btn" data-bulk="show" type="button">إظهار على اللوحة</button>
+            <button class="btn" data-bulk="hide" type="button">إخفاء من اللوحة</button>
+            <button class="btn bad" data-bulk="rejected" type="button">رفض</button>
             <button class="btn" data-bulk="clear" type="button">إلغاء التحديد</button>
           </div>
           <div class="list-head" id="listHead"></div>
